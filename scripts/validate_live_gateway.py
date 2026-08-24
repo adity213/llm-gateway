@@ -35,7 +35,7 @@ def test_chat(prompt: str, request_class: str = "default", priority: str = "inte
                 data = resp.json()
                 choice = data.get("choices", [{}])[0]
                 content = choice.get("message", {}).get("content", "")
-                provider = data.get("gateway_metadata", {}).get("provider_selected", "unknown")
+                provider = data.get("gateway_metadata", {}).get("provider", "unknown")
                 tokens = data.get("usage", {})
                 cost = data.get("gateway_metadata", {}).get("cost_usd", 0.0)
                 
