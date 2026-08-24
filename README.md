@@ -8,7 +8,8 @@
 
 When relying on third-party LLMs (OpenAI, Anthropic, Groq, Ollama), upstream rate limits, server 5xx errors, and latency spikes are inevitable. This gateway sits transparently between client applications and LLM providers, providing OpenAI-compatible drop-in normalization with active resilience engineering:
 
-- **Effective Availability Under Outage:** **`100.0%`** ([availability_run_20260824_112046.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/availability_run_20260824_112046.json)) — 707 total requests sustained through a 6-second chaos primary outage (200 served by primary, 507 automatically and transparently rerouted to secondary fallback with 0 client dropouts).
+- **Effective Availability Under Single Outage:** **`100.0%`** ([availability_run_20260824_112046.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/availability_run_20260824_112046.json)) — 707 requests sustained through a 6-second primary outage (200 served by primary, 507 transparently rerouted).
+- **Effective Availability Under 3-Min Cascading Outage:** **`99.96%`** ([extended_stress_availability_20260824_174651.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/extended_stress_availability_20260824_174651.json)) — 8,386 requests sustained across a 3-minute stress run with overlapping primary outage (50s), deferrable surge, and secondary fallback outage (40s). 301/301 queued deferrable tasks (100.0%) successfully recovered, with 0 lost jobs.
 - **Idempotent Replay Latency (p50 / p95 / p99):** **`0.90ms` / `1.11ms` / `1.60ms`** ([resilience_benchmarks_20260824_112156.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/resilience_benchmarks_20260824_112156.json)) — measured across 200 requests.
 - **Sliding-Window Flap Rate Under Noise:** **`0.0%`** (0 false trips across 10 evaluation windows / 200 samples) ([resilience_benchmarks_20260824_112156.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/resilience_benchmarks_20260824_112156.json)) with 5–10% random baseline noise.
 - **Half-Open Probe Admission Rate:** **`1.0 / 20`** admitted ([resilience_benchmarks_20260824_112156.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/resilience_benchmarks_20260824_112156.json)) — strictly 1 probe admitted per Half-Open burst, 19 rerouted safely to secondary.
@@ -21,7 +22,8 @@ Every headline metric in this repository is strictly generated from reproducible
 
 | Metric | Benchmark Script | Raw Result Artifact | Description | Measured Result |
 |---|---|---|---|---|
-| **Effective Availability** | `python benchmarks/load_test.py` | [availability_run_20260824_112046.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/availability_run_20260824_112046.json) | Mixed interactive/deferrable load with injected primary outage | **100.0%** (707/707) |
+| **Effective Availability (Primary Outage)** | `python benchmarks/load_test.py` | [availability_run_20260824_112046.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/availability_run_20260824_112046.json) | Mixed load with 6s injected primary outage | **100.0%** (707/707) |
+| **Extended 3-Min Cascading Stress Run** | `python benchmarks/extended_stress_load_test.py` | [extended_stress_availability_20260824_174651.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/extended_stress_availability_20260824_174651.json) | 3-min run: 50s primary + 40s fallback outage + deferrable surge | **99.96%** (8,386 reqs, 301/301 queue recovery) |
 | **Idempotent Replay Latency** | `python benchmarks/benchmark_resilience.py` | [resilience_benchmarks_20260824_112156.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/resilience_benchmarks_20260824_112156.json) | Measures p50/p95/p99 cache latency across 200 trials | **p50: 0.90ms, p95: 1.11ms** |
 | **Flap Rate Under Baseline Noise** | `python benchmarks/benchmark_resilience.py` | [resilience_benchmarks_20260824_112156.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/resilience_benchmarks_20260824_112156.json) | 5–10% random baseline noise across 10 windows, verifying 0 false trips | **0.0% flap rate** (0 false trips) |
 | **Probe Gating Under Race Conditions**| `python benchmarks/benchmark_resilience.py` | [resilience_benchmarks_20260824_112156.json](file:///c:/Android%20Projects/llm-gateway/benchmarks/results/resilience_benchmarks_20260824_112156.json) | 20 concurrent requests hitting Half-Open simultaneously across 5 trials | **1.0 probe / 19 rerouted** |
@@ -132,6 +134,10 @@ flowchart TD
 3. **Half-Open Race Conditions:**
    - *Issue:* Without probe locking, concurrent requests hitting a half-open provider simultaneously caused multiple probe calls, re-overloading the provider.
    - *Fix:* Implemented atomic single-permit probe acquisition with auto-expiring lock keys.
+
+4. **Cascading Outages & Total Blackout Dynamics (3-Min Stress Benchmark):**
+   - *Issue:* In real-world multi-provider failures, when primary (`mock-provider-a`, 50s outage) and secondary fallback (`mock-provider-b`, 40s outage) simultaneously go down during a deferrable surge, unbounded retries or synchronous blocking can cause cascading client timeouts.
+   - *Fix:* Implemented hard architectural bifurcation: interactive requests fail-fast immediately (`503 Service Unavailable` with `Retry-After: 30`) to unblock user interfaces, while 301 deferrable batch requests are preserved in Redis with exponential backoff + jitter. During post-outage recovery, 100.0% of queued tasks (301/301) successfully completed with 0 lost jobs and 99.96% effective availability outside blackout windows.
 
 ---
 
