@@ -25,7 +25,7 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
     ),
     "anthropic-claude": ProviderConfig(
         provider_name="anthropic-claude",
-        litellm_model_id="claude-3-5-sonnet-20241022",
+        litellm_model_id="anthropic/claude-3-5-sonnet-20241022",
         quality_tier="premium",
         cost_per_input_token=0.000003,  # $3.00 per 1M tokens
         cost_per_output_token=0.000015,  # $15.00 per 1M tokens
@@ -33,7 +33,7 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
     ),
     "ollama-local": ProviderConfig(
         provider_name="ollama-local",
-        litellm_model_id="ollama/llama3.2",
+        litellm_model_id="ollama/llama3.2:1b",
         quality_tier="local",
         cost_per_input_token=0.0,  # Free / local compute
         cost_per_output_token=0.0,
