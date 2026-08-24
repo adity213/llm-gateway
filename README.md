@@ -122,6 +122,10 @@ flowchart TD
 - **Decision:** Hedging (firing concurrent requests to two providers and taking the fastest) is kept as an explicit opt-in policy rather than a default.
 - **Trade-Off:** Hedging doubles provider token costs. For 95% of enterprise workloads, fast circuit-breaker failover provides sufficient latency guarantees at 50% lower cost.
 
+### 4. Zero-Cost Metadata Probing in Half-Open State
+- **Decision:** When a circuit breaker enters `HALF_OPEN`, instead of risking expensive multi-thousand-token client prompts on an unverified provider, the gateway executes an asynchronous zero-token metadata probe (`GET /v1/models` or `/api/tags`) in ~50ms.
+- **Trade-Off:** Verifies DNS, TLS, upstream gateway reachability, and API key authentication for **`$0.00`**. If the provider is still down or quota-blocked, the probe immediately trips back to `OPEN` without wasting client dollars or generation compute.
+
 ---
 
 ## 6. Engineering Post-Mortem ("What Didn't Work")

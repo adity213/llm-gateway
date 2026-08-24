@@ -26,6 +26,69 @@ def state_to_int(state: CircuitState) -> int:
     return mapping[state]
 
 
+import httpx
+from app.models.schemas import ChaosModeEnum
+
+
+async def probe_provider_metadata(provider_name: str) -> bool:
+    """
+    Performs a lightweight, zero-token HTTP metadata probe (/v1/models or health tags)
+    to verify upstream network reachability and authentication without spending money on AI generation tokens.
+    """
+    # 1. Check if mock provider or running under test environment
+    if provider_name.startswith("mock-") or settings.ENVIRONMENT == "test":
+        try:
+            from app.resilience.chaos import chaos_manager
+            if chaos_manager.is_chaos_active(provider_name):
+                status = chaos_manager.get_status(provider_name)
+                if status.mode == ChaosModeEnum.FAIL_ALL:
+                    return False
+        except Exception:
+            pass
+        return True
+
+    # 2. Real provider probe via zero-cost HTTP metadata endpoints
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            if provider_name == "ollama-local":
+                resp = await client.get(f"{settings.OLLAMA_API_BASE}/api/tags")
+                return resp.status_code == 200
+            elif provider_name == "gemini-flash":
+                if not settings.GEMINI_API_KEY:
+                    return False
+                url = f"https://generativelanguage.googleapis.com/v1beta/models?key={settings.GEMINI_API_KEY}"
+                resp = await client.get(url)
+                return resp.status_code == 200
+            elif provider_name.startswith("puter-"):
+                if not settings.PUTER_AUTH_TOKEN:
+                    return False
+                headers = {"Authorization": f"Bearer {settings.PUTER_AUTH_TOKEN}"}
+                resp = await client.get("https://api.puter.com/puterai/openai/v1/models", headers=headers)
+                return resp.status_code in (200, 404)
+            elif provider_name == "groq-llama":
+                if not settings.GROQ_API_KEY:
+                    return False
+                headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
+                resp = await client.get("https://api.groq.com/openai/v1/models", headers=headers)
+                return resp.status_code == 200
+            elif provider_name == "anthropic-claude":
+                if not settings.ANTHROPIC_API_KEY:
+                    return False
+                headers = {"x-api-key": settings.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01"}
+                resp = await client.get("https://api.anthropic.com/v1/models", headers=headers)
+                return resp.status_code in (200, 400)
+            elif provider_name.startswith("openai"):
+                if not settings.OPENAI_API_KEY:
+                    return False
+                headers = {"Authorization": f"Bearer {settings.OPENAI_API_KEY}"}
+                resp = await client.get("https://api.openai.com/v1/models", headers=headers)
+                return resp.status_code == 200
+    except Exception:
+        return False
+
+    return True
+
+
 class CircuitBreaker:
     """
     Implements the 3-state Circuit Breaker per PRD specifications:
@@ -99,7 +162,7 @@ class CircuitBreaker:
         Returns True if traffic is allowed to this provider.
         - CLOSED: True
         - OPEN: False
-        - HALF_OPEN: True only for a single probe request at a time (preventing blast radius).
+        - HALF_OPEN: True only for a single probe request at a time after verifying zero-cost metadata probe.
         """
         state = await self.get_state(redis_client)
         if state == CircuitState.CLOSED:
@@ -113,6 +176,13 @@ class CircuitBreaker:
         # Try to acquire probe permit lock with 15s expiration
         acquired = await client.set(probe_lock_key, "1", nx=True, ex=15)
         if acquired:
+            # Zero-cost metadata / models endpoint pre-check (Option A)
+            is_metadata_healthy = await probe_provider_metadata(self.provider_name)
+            if not is_metadata_healthy:
+                # Upstream metadata probe failed -> trip immediately back to OPEN without wasting prompt tokens!
+                await self.record_failure(client)
+                return False
+
             self._probe_in_flight = True
             return True
         return False
