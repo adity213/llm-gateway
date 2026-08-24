@@ -93,7 +93,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "llm_gateway_circuit_state",
+          "expr": "max by (provider) (llm_gateway_circuit_state)",
           "legendFormat": "{{provider}}",
           "refId": "A"
         }
@@ -122,7 +122,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "llm_gateway_queue_depth",
+          "expr": "max(llm_gateway_queue_depth)",
           "legendFormat": "Queue Depth",
           "refId": "A"
         }
