@@ -25,6 +25,7 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - PUTER_AUTH_TOKEN=${PUTER_AUTH_TOKEN:-}
     volumes:
       - ./app:/app/app:ro
     depends_on:

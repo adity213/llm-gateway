@@ -47,6 +47,22 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
         cost_per_output_token=0.00000040,  # $0.40 per 1M tokens
         timeout_seconds=15.0,
     ),
+    "puter-grok": ProviderConfig(
+        provider_name="puter-grok",
+        litellm_model_id="openai/grok-2",
+        quality_tier="premium",
+        cost_per_input_token=0.0,  # Free tier via Puter
+        cost_per_output_token=0.0,
+        timeout_seconds=25.0,
+    ),
+    "puter-claude": ProviderConfig(
+        provider_name="puter-claude",
+        litellm_model_id="openai/claude-3-5-sonnet",
+        quality_tier="premium",
+        cost_per_input_token=0.0,  # Free tier via Puter
+        cost_per_output_token=0.0,
+        timeout_seconds=25.0,
+    ),
     "mock-provider-a": ProviderConfig(
         provider_name="mock-provider-a",
         litellm_model_id="mock/model-a",
@@ -67,9 +83,9 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
 
 # Request class preference lists per PRD Section 4 Phase 3
 DEFAULT_PREFERENCE_LISTS: Dict[str, List[str]] = {
-    "cheap_classification": ["gemini-flash", "ollama-local", "groq-llama", "anthropic-claude"],
-    "long_form_generation": ["anthropic-claude", "gemini-flash", "groq-llama", "ollama-local"],
-    "default": ["gemini-flash", "groq-llama", "anthropic-claude", "ollama-local"],
+    "cheap_classification": ["gemini-flash", "puter-grok", "ollama-local", "groq-llama", "anthropic-claude"],
+    "long_form_generation": ["puter-claude", "anthropic-claude", "gemini-flash", "puter-grok", "groq-llama", "ollama-local"],
+    "default": ["gemini-flash", "puter-grok", "puter-claude", "groq-llama", "anthropic-claude", "ollama-local"],
     "mock_testing": ["mock-provider-a", "mock-provider-b"],
 }
 

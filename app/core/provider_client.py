@@ -133,6 +133,10 @@ async def call_provider(
         kwargs["max_tokens"] = max_tokens
     if config.provider_name == "ollama-local":
         kwargs["api_base"] = settings.OLLAMA_API_BASE
+    elif config.provider_name.startswith("puter-"):
+        kwargs["api_base"] = "https://api.puter.com/puterai/openai/v1"
+        if settings.PUTER_AUTH_TOKEN:
+            kwargs["api_key"] = settings.PUTER_AUTH_TOKEN
 
     try:
         litellm_lib = _get_litellm()

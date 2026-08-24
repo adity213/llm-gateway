@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
+    PUTER_AUTH_TOKEN: str = ""
     OLLAMA_API_BASE: str = "http://localhost:11434"
 
     # Health Tracking & Sliding Window
