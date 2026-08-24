@@ -116,6 +116,11 @@ async def call_provider(
         os.environ["ANTHROPIC_API_KEY"] = settings.ANTHROPIC_API_KEY
     if settings.OPENAI_API_KEY and "OPENAI_API_KEY" not in os.environ:
         os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
+    if settings.GEMINI_API_KEY:
+        if "GEMINI_API_KEY" not in os.environ:
+            os.environ["GEMINI_API_KEY"] = settings.GEMINI_API_KEY
+        if "GOOGLE_API_KEY" not in os.environ:
+            os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
 
     # 4. Real call via LiteLLM
     kwargs: Dict[str, Any] = {

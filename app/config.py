@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
     OLLAMA_API_BASE: str = "http://localhost:11434"
 
     # Health Tracking & Sliding Window

@@ -39,6 +39,14 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
         cost_per_output_token=0.0,
         timeout_seconds=30.0,
     ),
+    "gemini-flash": ProviderConfig(
+        provider_name="gemini-flash",
+        litellm_model_id="gemini/gemini-2.0-flash",
+        quality_tier="fast",
+        cost_per_input_token=0.00000010,  # $0.10 per 1M tokens
+        cost_per_output_token=0.00000040,  # $0.40 per 1M tokens
+        timeout_seconds=15.0,
+    ),
     "mock-provider-a": ProviderConfig(
         provider_name="mock-provider-a",
         litellm_model_id="mock/model-a",
@@ -59,9 +67,9 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
 
 # Request class preference lists per PRD Section 4 Phase 3
 DEFAULT_PREFERENCE_LISTS: Dict[str, List[str]] = {
-    "cheap_classification": ["ollama-local", "groq-llama", "anthropic-claude"],
-    "long_form_generation": ["anthropic-claude", "groq-llama", "ollama-local"],
-    "default": ["groq-llama", "anthropic-claude", "ollama-local"],
+    "cheap_classification": ["gemini-flash", "ollama-local", "groq-llama", "anthropic-claude"],
+    "long_form_generation": ["anthropic-claude", "gemini-flash", "groq-llama", "ollama-local"],
+    "default": ["gemini-flash", "groq-llama", "anthropic-claude", "ollama-local"],
     "mock_testing": ["mock-provider-a", "mock-provider-b"],
 }
 
