@@ -1,0 +1,62 @@
+{
+  "benchmark": "resilience_and_latencies",
+  "timestamp": "2026-08-24T05:22:22Z",
+  "mode": "In-Process ASGI Transport",
+  "idempotency_latency": {
+    "trials": 200,
+    "p50_latency_ms": 0.68,
+    "p95_latency_ms": 1.08,
+    "p99_latency_ms": 1.47
+  },
+  "sliding_window_flap_rate": {
+    "windows_tested": 10,
+    "total_requests": 200,
+    "baseline_noise_percent": "5-10%",
+    "false_trips": 0,
+    "flap_rate_percent": 0.0
+  },
+  "half_open_probe_gating": {
+    "trials": 5,
+    "concurrent_requests_per_trial": 20,
+    "average_probes_admitted": 20.0,
+    "concurrency_safe": false,
+    "trial_breakdown": [
+      {
+        "trial": 1,
+        "total_concurrent": 20,
+        "probe_admitted": 20,
+        "rerouted": 0
+      },
+      {
+        "trial": 2,
+        "total_concurrent": 20,
+        "probe_admitted": 20,
+        "rerouted": 0
+      },
+      {
+        "trial": 3,
+        "total_concurrent": 20,
+        "probe_admitted": 20,
+        "rerouted": 0
+      },
+      {
+        "trial": 4,
+        "total_concurrent": 20,
+        "probe_admitted": 20,
+        "rerouted": 0
+      },
+      {
+        "trial": 5,
+        "total_concurrent": 20,
+        "probe_admitted": 20,
+        "rerouted": 0
+      }
+    ]
+  },
+  "cost_attribution": {
+    "feature=\"idemp_test\",provider=\"mock-provider-a\",tenant=\"tenant_bench\"": 3.1e-05,
+    "feature=\"noise_bench\",provider=\"mock-provider-a\",tenant=\"tenant_noise\"": 0.0062,
+    "feature=\"probe_test\",provider=\"mock-provider-b\",tenant=\"tenant_probe\"": 0.01332,
+    "feature=\"probe_test\",provider=\"mock-provider-a\",tenant=\"tenant_probe\"": 0.0031
+  }
+}
